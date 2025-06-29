@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: crm-db
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: proyecto
+      POSTGRES_PASSWORD: Coco2025
+      POSTGRES_DB: crm_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:latest
+    container_name: crm-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build: .
+    container_name: crm-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+      - db
+    environment:
+      DB_USERNAME: proyecto
+      DB_PASSWORD: Coco2025
+      DB_NAME: crm_db
+      DB_HOST: db
+      DB_DIALECT: postgres
+      PORT: 3000
+      JWT_SECRET: supersecretoseguro
+      MONGO_URI: mongodb://mongo:27017/crm_history
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ruthvelasquezbe@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  mongo-data:
