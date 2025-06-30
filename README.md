@@ -391,4 +391,4 @@ MONGO_URI=mongodb://mongo:27017/crm_history
 
 ---
 
-Desarrollado con ❤️ por [Ruth Velasquez]
+Desarrollado con ❤️ por Ruth Velasquez
