@@ -1,24 +1,37 @@
-// src/middlewares/auth.js
-// Middleware de autenticación JWT
 
+
+// Se importa la librería para verificar tokens JWT
 const jwt = require('jsonwebtoken');
 
+// Este es un middleware que se ejecuta antes de las rutas protegidas
 module.exports = (req, res, next) => {
-  // Obtenemos el token del header Authorization
+  // Se obtiene el token del encabezado 'authorization' de la petición
   const token = req.headers['authorization'];
 
-  // Si no hay token, respondemos con error 401
-  if (!token) return res.status(401).json({ error: 'Token requerido' });
+  // Si no hay token, el usuario no está autenticado
+  if (!token) {
+    return res.status(401).json({ 
+      error: 'Acceso denegado',
+      mensaje: 'Necesitas un token de autenticación'
+    });
+  }
 
   try {
-    // Verificamos y decodificamos el token usando la clave secreta
-    // Quitamos el prefijo 'Bearer ' si existe
-    req.user = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
-
-    // Si todo está bien, continuamos con la siguiente función
+    // Se verifica el token usando nuestra clave secreta
+   
+    const tokenSinBearer = token.replace('Bearer ', ''); 
+    const usuarioVerificado = jwt.verify(tokenSinBearer, process.env.JWT_SECRET);
+    
+    // Se guarda la información del usuario en la petición para usarla en las rutas
+    req.user = usuarioVerificado;
+  
     next();
-  } catch {
-    // Si el token es inválido o expiró, respondemos con error 401
-    res.status(401).json({ error: 'Token inválido' });
+  } catch (error) {
+
+    console.error('Error al verificar el token:', error);
+    res.status(401).json({ 
+      error: 'Token inválido',
+      mensaje: 'Tu sesión ha expirado o el token no es válido'
+    });
   }
 };

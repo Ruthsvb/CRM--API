@@ -1,18 +1,28 @@
-// server.js
+// Este es el archivo principal del servidor
 
-// Importamos la app de Express que contiene rutas y middlewares
+
+// Importamos la aplicación Express (app.js tiene todas las rutas)
 const app = require('./app');
 
-// Importamos la función de conexión a MongoDB
+// Importamos la función para conectar a MongoDB
 const connectMongo = require('./src/mongodb/mongo');
 
-// Puerto desde variable de entorno o 3000 por defecto
+// Definimos el puerto donde correrá el servidor
+// Usa el puerto de la variable de entorno o el 3000 por defecto
 const PORT = process.env.PORT || 3000;
 
-// Conectamos a MongoDB al iniciar el servidor
-connectMongo();
+// Conectamos a la base de datos MongoDB
+connectMongo()
+  .then(() => console.log(' Conectado a MongoDB'))
+  .catch(err => console.error('Error con MongoDB:', err));
 
-// Iniciamos el servidor en el puerto especificado
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+// Iniciamos el servidor
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Servidor en http://localhost:${PORT}`);
+});
+
+// Si hay un error inesperado, lo mostramos
+process.on('unhandledRejection', (err) => {
+  console.error('Error inesperado:', err);
+  server.close(() => process.exit(1));
 });

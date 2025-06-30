@@ -1,27 +1,28 @@
-// src/mongodb/models/Historial.js
-
 const mongoose = require("mongoose");
 
-// Definimos el esquema del historial de acciones
+// Se define el esquema del historial de acciones
 const historialSchema = new mongoose.Schema({
   tipo: {
     type: String,
     required: true,
-    enum: ["CREAR", "EDITAR", "ELIMINAR"], 
+    enum: ["CREAR", "EDITAR", "ELIMINAR"]
   },
   descripcion: {
     type: String,
-    required: true,
+    required: true
   },
   usuario: {
     type: String,
-    default: "sistema", // En este proyecto no tenemos auth por usuario real aún
+    default: "sistema"
   },
   fecha: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
-// Exportamos el modelo para usarlo donde lo necesitemos
-module.exports = mongoose.model("Historial", historialSchema);
+// Se verifica si el modelo ya existe antes de crearlo
+const Historial = mongoose.models.Historial || mongoose.model("Historial", historialSchema, 'historials');
+
+// Se exporta el modelo
+module.exports = Historial;

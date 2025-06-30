@@ -1,10 +1,10 @@
-version: '3.8'
-
+# Definición de servicios para el entorno de desarrollo
 services:
+  # Servicio de base de datos PostgreSQL
   db:
-    container_name: crm-db
-    image: postgres
-    restart: always
+    container_name: crm-db  
+    image: postgres  
+    restart: always  
     ports:
       - "5432:5432"
     environment:
@@ -14,6 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Servicio de base de datos MongoDB
   mongo:
     image: mongo:latest
     container_name: crm-mongo
@@ -23,6 +24,7 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  # Servicio de la API de Node.js
   api:
     build: .
     container_name: crm-api
@@ -55,6 +57,7 @@ services:
     depends_on:
       - db
 
+# Definición de volúmenes para persistencia de datos
 volumes:
   postgres_data:
   mongo-data:

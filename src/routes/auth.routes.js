@@ -1,19 +1,32 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+
 const router = express.Router();
 
-// Ruta de login
+// Ruta para el inicio de sesión
+// POST /api/auth/login
+// Espera un objeto JSON con { usuario, password }
 router.post('/login', (req, res) => {
   const { usuario, password } = req.body;
+  console.log('Inicio de sesión intentado para:', usuario);
 
-  // Usuario y contraseña fijos para la demo
   if (usuario === 'RSVB' && password === 'admin123') {
-    // Generar token JWT
-    const token = jwt.sign({ usuario }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    return res.json({ token });
-  } else {
-    return res.status(401).json({ error: 'Credenciales inválidas' });
+    const token = jwt.sign(
+      { usuario },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    
+    return res.json({ 
+      mensaje: '¡Bienvenido! Has iniciado sesión correctamente',
+      token
+    });
   }
+
+  return res.status(401).json({ 
+    error: 'Acceso denegado',
+    mensaje: 'El usuario o la contraseña son incorrectos'
+  });
 });
 
 module.exports = router;

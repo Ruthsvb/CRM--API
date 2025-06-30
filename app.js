@@ -1,26 +1,39 @@
-// app.js
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+// app.js - Configuración principal de la aplicación
 
+// Importamos las librerías necesarias
+const express = require('express');  
+const cors = require('cors');       
+require('dotenv').config();
+
+// Creamos la aplicación Express
 const app = express();
 
-// Middlewares
-app.use(cors());
+// Configuraciones básicas
+app.use(cors());            
 app.use(express.json());
 
-// Rutas
-const clienteRoutes = require('./src/routes/cliente.routes');
-const historialRoutes = require('./src/routes/historial.routes'); // 👈 aquí
-app.use('/api', clienteRoutes);
-app.use('/api/historial', historialRoutes); // 👈 aquí
+// Rutas de autenticación (login, registro, etc.)
+const authRoutes = require('./src/routes/auth.routes');
+app.use('/api/auth', authRoutes);
 
-// Ruta de prueba
+// Rutas para manejar clientes
+const ClienteRoutes = require('./src/routes/cliente.routes');
+app.use('/api/clientes', ClienteRoutes);
+
+// Rutas para el historial de actividades
+const historialRoutes = require('./src/routes/historial.routes');
+app.use('/api/historial', historialRoutes);
+
+// Ruta de prueba para ver si el servidor está funcionando
 app.get('/', (req, res) => {
-  res.send('¡API CRM funcionando!');
+  res.redirect('/api-docs');
 });
 
-const authRoutes = require('./src/routes/auth.routes');
-app.use('/api', authRoutes);
+// Manejador de errores global
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: '¡Algo salió mal!' });
+});
 
+// Exportamos la aplicación para usarla en server.js
 module.exports = app;

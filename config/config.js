@@ -1,3 +1,8 @@
+
+
+//Este archivo exporta la configuración de conexión a la base de datos PostgreSQL
+
+// Cargar variables de entorno desde el archivo .env
 require('dotenv').config();
 
 module.exports = {

@@ -1,54 +1,62 @@
 
-// Importamos el modelo Cliente desde la base de datos PostgreSQL
+//Controladores para manejar las operaciones CRUD de clientes
+
 const { Cliente } = require('../models');
 
-// Importamos la función que registra acciones en MongoDB para auditoría
 const { registrarAccion } = require('../../mongodb/controllers/historial.controller');
 
-// Controlador para crear uno o varios clientes
+
+ // Crea uno o varios clientes nuevos
 const crearCliente = async (req, res) => {
   try {
     const data = req.body;
 
-    // Validamos que cada cliente tenga nombre y email
+    // Función para validar que un cliente tenga los campos obligatorios
     const validarCliente = (cliente) => {
       if (!cliente.nombre || !cliente.email) {
         throw new Error('El nombre y el email son obligatorios.');
       }
     };
 
-    // Si recibimos un array, creamos múltiples clientes
+    // Si recibimos un array de clientes
     if (Array.isArray(data)) {
-      data.forEach(validarCliente); // Validamos cada objeto
-      const nuevosClientes = await Cliente.bulkCreate(data); // Guardamos en PostgreSQL
+      // Validamos cada cliente del array
+      data.forEach(validarCliente);
+      
+      // Creamos todos los clientes de una vez (operación en lote)
+      const nuevosClientes = await Cliente.bulkCreate(data);
 
-      // Registramos en MongoDB cada creación
+      // Registramos una acción de auditoría por cada cliente creado
       await Promise.all(
         nuevosClientes.map((cliente) =>
           registrarAccion({
             tipo: "CREAR",
             descripcion: `Se creó el cliente: ${cliente.nombre}`,
+            usuario: req.user?.usuario || 'sistema' 
           })
         )
       );
 
+      // Devolvemos los clientes creados
       return res.status(201).json(nuevosClientes);
     }
 
-    // Si es un solo cliente
-    validarCliente(data); // Validamos
-    const nuevoCliente = await Cliente.create(data); // Guardamos en PostgreSQL
+    // Si solo es un cliente, lo validamos y creamos
+    validarCliente(data);
+    const nuevoCliente = await Cliente.create(data);
 
-    // Registramos la creación en el historial
+    // Registramos la acción 
     await registrarAccion({
       tipo: "CREAR",
       descripcion: `Se creó el cliente: ${nuevoCliente.nombre}`,
+      usuario: req.user?.usuario || 'sistema'
     });
 
+    // Devolvemos el cliente creado
     res.status(201).json(nuevoCliente);
 
   } catch (error) {
-    // Capturamos cualquier error y lo devolvemos
+    // Si hay un error, respondemos con el mensaje de error
     res.status(500).json({
       error: 'Error al crear el/los cliente(s)',
       detalle: error.message,
@@ -56,12 +64,21 @@ const crearCliente = async (req, res) => {
   }
 };
 
-// Controlador para obtener todos los clientes
+/**
+ * Obtiene todos los clientes de la base de datos
+ * Ruta: GET /api/clientes
+ */
 const obtenerClientes = async (req, res) => {
   try {
-    const clientes = await Cliente.findAll(); // Consultamos todos los registros
-    res.json(clientes); // Enviamos la respuesta
+    // Buscamos todos los clientes en la base de datos
+    const clientes = await Cliente.findAll({
+      order: [['createdAt', 'DESC']] 
+    });
+    
+    // Devolvemos la lista de clientes
+    res.json(clientes);
   } catch (error) {
+
     res.status(500).json({
       error: 'Error al obtener clientes',
       detalle: error.message,
@@ -69,30 +86,46 @@ const obtenerClientes = async (req, res) => {
   }
 };
 
-// Controlador para actualizar un cliente por su ID
+/**
+ * Actualiza un cliente existente por su ID
+ * Ruta: PUT /api/clientes/:id
+ */
 const actualizarCliente = async (req, res) => {
   try {
+    // Obtenemos el ID de los parámetros de la URL
     const { id } = req.params;
 
-    // Sequelize devuelve un array donde el primer valor indica si se actualizó
-    const [actualizado] = await Cliente.update(req.body, { where: { id } });
+    // Actualizamos el cliente y obtenemos cuántas filas se actualizaron
+    const [actualizado] = await Cliente.update(req.body, { 
+      where: { id },
+      returning: true, 
+      individualHooks: true 
+    });
 
+    // Si se actualizó correctamente (actualizado = 1)
     if (actualizado) {
-      const clienteActualizado = await Cliente.findByPk(id); // Obtenemos el cliente actualizado
+      // Obtenemos el cliente actualizado
+      const clienteActualizado = await Cliente.findByPk(id);
 
-      // Registramos la edición en MongoDB
+      // Registramos la acción de auditoría
       await registrarAccion({
         tipo: "EDITAR",
-        descripcion: `Se editó el cliente con ID: ${id}`,
+        descripcion: `Se editó el cliente con ID: ${id} (${clienteActualizado.nombre})`,
+        usuario: req.user?.usuario || 'sistema'
       });
 
+      // Devolvemos el cliente actualizado
       res.json(clienteActualizado);
     } else {
-      // Si no existe el cliente
-      res.status(404).json({ error: 'Cliente no encontrado' });
+      // Si no se encontró el cliente
+      res.status(404).json({ 
+        error: 'Cliente no encontrado',
+        mensaje: `No existe un cliente con el ID: ${id}`
+      });
     }
 
   } catch (error) {
+    // Si hay un error, respondemos con el mensaje de error
     res.status(500).json({
       error: 'Error al actualizar cliente',
       detalle: error.message,
@@ -100,28 +133,44 @@ const actualizarCliente = async (req, res) => {
   }
 };
 
-// Controlador para eliminar un cliente por su ID
+//Elimina un cliente por su ID
+
 const eliminarCliente = async (req, res) => {
   try {
+    // Obtenemos el ID de los parámetros de la URL
     const { id } = req.params;
 
-    // Intentamos eliminar el cliente
-    const eliminado = await Cliente.destroy({ where: { id } });
-
-    if (eliminado) {
-      // Registramos la eliminación en el historial
-      await registrarAccion({
-        tipo: "ELIMINAR",
-        descripcion: `Se eliminó el cliente con ID: ${id}`,
+    // Buscamos el cliente para obtener su nombre antes de eliminarlo
+    const cliente = await Cliente.findByPk(id);
+    
+    if (!cliente) {
+      return res.status(404).json({ 
+        error: 'Cliente no encontrado',
+        mensaje: `No existe un cliente con el ID: ${id}`
       });
-
-      res.json({ mensaje: 'Cliente eliminado correctamente' });
-    } else {
-      // Si no se encontró el cliente
-      res.status(404).json({ error: 'Cliente no encontrado' });
     }
 
+    // Guardamos el nombre para el registro de auditoría
+    const nombreCliente = cliente.nombre;
+    
+    // Eliminamos el cliente
+    await cliente.destroy();
+
+    // Registramos la acción de auditoría
+    await registrarAccion({
+      tipo: "ELIMINAR",
+      descripcion: `Se eliminó el cliente: ${nombreCliente} (ID: ${id})`,
+      usuario: req.user?.usuario || 'sistema'
+    });
+
+    // Confirmamos que se eliminó correctamente
+    res.json({ 
+      mensaje: 'Cliente eliminado correctamente',
+      cliente: { id, nombre: nombreCliente }
+    });
+
   } catch (error) {
+    // Si hay un error, respondemos con el mensaje de error
     res.status(500).json({
       error: 'Error al eliminar cliente',
       detalle: error.message,
@@ -129,7 +178,7 @@ const eliminarCliente = async (req, res) => {
   }
 };
 
-// Exportamos todos los métodos del controlador
+// Exportamos todos los controladores para usarlos en las rutas
 module.exports = {
   crearCliente,
   obtenerClientes,
