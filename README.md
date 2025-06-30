@@ -242,20 +242,58 @@ Si solo necesitas el servicio de MongoDB:
 docker-compose up -d mongo
 ```
 
-### Conectarse a MongoDB
+### Conectarse a MongoDB y PostgreSQL
 
-Puedes conectarte a MongoDB de varias formas:
+#### MongoDB
 
-1. **Usando MongoDB Compass**:
-   - **Opción 1 (recomendada para la mayoría de los casos)**:
-     ```
-     mongodb://localhost:27017/crm_history
-     ```
-   - **Opción 2 (si localhost no funciona)**:
-     ```
-     mongodb://192.168.100.70:27017/crm_history
-     ```
-   - **Nota**: Si usas la dirección IP, asegúrate de que el puerto 27017 esté accesible en tu red local.
+**Conexión desde el host (tu computadora):**
+- **Opción 1 (localhost):**
+  ```
+  mongodb://localhost:27017/crm_history
+  ```
+- **Opción 2 (IP local):**
+  ```
+  mongodb://192.168.100.70:27017/crm_history
+  ```
+
+**Dentro de la red de Docker:**
+```
+mongodb://mongo:27017/crm_history
+```
+
+#### PostgreSQL
+
+**Conexión desde el host (tu computadora):**
+- **Opción 1 (localhost):**
+  ```
+  Host: localhost
+  Port: 5432
+  Database: crm_db
+  User: proyecto
+  Password: Coco2025
+  ```
+- **Opción 2 (IP local):**
+  ```
+  Host: 192.168.100.70
+  Port: 5432
+  Database: crm_db
+  User: proyecto
+  Password: Coco2025
+  ```
+
+**Dentro de la red de Docker:**
+```
+Host: db
+Port: 5432
+Database: crm_db
+User: proyecto
+Password: Coco2025
+```
+
+**Notas importantes:**
+- Los puertos predeterminados son 27017 para MongoDB y 5432 para PostgreSQL
+- Asegúrate de que los puertos estén accesibles si usas la IP local
+- Las credenciales son las configuradas en el docker-compose.yml
 
 2. **Usando la terminal**:
    ```bash
